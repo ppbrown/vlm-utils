@@ -14,7 +14,7 @@ Note that you must have **at least** 12 GB vram to use
 
     python cog_vlm.py
 
-### Actual
+### Typical Use
 
     # The program expects to read in filenames, one per line,
     # from stdin. This is a quick way to make that work
