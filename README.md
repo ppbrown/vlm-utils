@@ -19,7 +19,7 @@ Note that you must have **at least** 12 GB vram to use
     # The program expects to read in filenames, one per line,
     # from stdin. This is a quick way to make that work
 
-    ls *.jpg  .....  | col |python cog_vlm.py (correct flags here as mentioned above)
+    ls *.jpg  .....  | col |python cog_vlm.py
 
     # Note that the first run will take a VERY LONG TIME, because
     # it will download a buncha stuff from hugging face.
