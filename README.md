@@ -12,19 +12,7 @@ Note that you must have **at least** 12 GB vram to use
 
 ## Run
 
-### 24gig VRAM key flags
-
-Gnerally, run with
-
-    python cog_vlm.py --bf16
-
-**DO NOT EVER USE --quant 4**
-It does something wierd to the datafiles, and then you wont be able to run the larger version any more.
-I havent discovered a fix for this yet.
-
-### 12-20 gig VRAM
-
-    python cog_vlm.py --quant 4
+    python cog_vlm.py
 
 ### Actual
 
