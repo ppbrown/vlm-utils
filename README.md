@@ -24,5 +24,5 @@ Note that you must have **at least** 12 GB vram to use
     # Note that the first run will take a VERY LONG TIME, because
     # it will download a buncha stuff from hugging face.
     # but after that, it should start up after a few seconds.
-    # There is still loading penalty, however, so it is
-    # is most efficient to do more than one file at a time
+    # There is still a loading penalty, however, so it is
+    # most efficient to do more than one file at a time
