@@ -15,6 +15,12 @@ import os
 from PIL import Image
 from transformers import AutoModelForCausalLM, LlamaTokenizer
 
+query = "describe the image"
+# alternative queries:
+# query = "describe the style and content of this picture"
+# query = "Should this image be rated nsfw or sfw?"
+
+
 parser = argparse.ArgumentParser()
 parser.add_argument("--quant", choices=[4], type=int, default=4, help='quantization bits')
 # Yes there are other tuned versions of cog, used for general chat
@@ -59,7 +65,6 @@ else:
 while True:
 
     history = []
-    query = "describe the image"
     print("Reading filenames from stdin now. Be patient...")
 
     while True:
