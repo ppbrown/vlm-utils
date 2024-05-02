@@ -4,6 +4,16 @@ One or more utils for the CogVLM Visual Language Model
 Currently, it has only ONE script: cog_vlm.py
 Note that you must have **at least** 12 GB vram to use
 
+## Purpose
+
+This can be used for multiple related purposes:
+
+* Autogenerating .txt descriptions for images
+* Detecting if there is an artists signature or watermark in an image
+* Determining if an image has nsfw content
+
+  See the script comments for alternative prompts that may help
+
 ## Install
 
     python -m venv venv
