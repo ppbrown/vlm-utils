@@ -36,3 +36,15 @@ This can be used for multiple related purposes:
     # but after that, it should start up after a few seconds.
     # There is still a loading penalty, however, so it is
     # most efficient to do more than one file at a time
+
+## Filtering tip
+It can be very useful for filtering images.
+If you want to do this in a directory that already has some ".txt" files,
+then modify the script to output to ".desc" instead of ".txt"
+
+eg:   txt_filename = f"{filename}.desc" 
+
+Once you have done this, then you can generate a list of image files
+to potentially remove, with something like:
+
+egrep -l 'watermark|artist.s signature|comic panel|blahblah' *desc |sed s/desc/jpg/
