@@ -55,6 +55,7 @@ This can be used for multiple related purposes:
 
 ## Filtering tip
 It can be very useful for filtering images.
+
 If you want to do this in a directory that already has some ".txt" files,
 then modify the script to output to ".desc" instead of ".txt"
 
