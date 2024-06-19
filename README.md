@@ -1,10 +1,14 @@
-# cogvlm-utils
-One or more utils for the CogVLM Visual Language Model
+#  Purpose
 
-Currently, it has only ONE script: cog_vlm.py
+
+One or more utils for various VLMs (Visual Language Models)
+
+
+# cog_vlm.py 
+
 Note that you must have **at least** 12 GB vram to use
 
-## Purpose
+## cog_vlm.py purpose
 
 This can be used for multiple related purposes:
 
