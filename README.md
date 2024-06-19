@@ -6,13 +6,13 @@ One or more utils for various VLMs (Visual Language Models)
 # ilm-2b_batch.py
 
 Use it like cog_vlm.py below. 
-Note that it generates ".ilm" files instad of ".desc" files
+Note that it generates ".ilm" files instad of ".txt" files
 Also, it requires 16GB rather than 12 GB of vram
 
 # ilm-7b_batch.py
 
 Use it like cog_vlm.py below. 
-Note that it generates ".ilm7" files instad of ".desc" files
+Note that it generates ".ilm7" files instad of ".txt" files
 Also, it requires 24GB rather than 12 GB of vram
 
 
