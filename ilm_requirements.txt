@@ -1,0 +1,4 @@
+lmdeploy
+auto_gptq
+transformers timm sentencepiece gradio markdown2 xlsxwriter einops
+numpy==1.26.4
