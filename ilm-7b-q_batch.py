@@ -27,7 +27,8 @@ model = InternLMXComposer2QForCausalLM.from_quantized(
 tokenizer = AutoTokenizer.from_pretrained(
   'internlm/internlm-xcomposer2-vl-7b-4bit', trust_remote_code=True)
 
-query = '<ImageHere>Please describe this image in detail.'
+#query = '<ImageHere>Please describe this image in detail.'
+query = '<ImageHere>Please objectively describe the subjects in detail, including any blurring.'
 
 while True:
         try:
