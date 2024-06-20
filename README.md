@@ -3,6 +3,10 @@
 
 One or more utils for various VLMs (Visual Language Models)
 
+# ilm-7b-q_batch.py
+
+Similar to others, but takes less than 12 GB of vram, and is also the fastest to run
+
 # ilm-2b_batch.py
 
 Use it like cog_vlm.py below. 
