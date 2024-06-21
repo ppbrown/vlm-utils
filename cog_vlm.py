@@ -78,7 +78,9 @@ while True:
 
         filename, _ = os.path.splitext(image_path)
         txt_filename = f"{filename}.txt"
-
+        if os.path.exists(txt_filename):
+            print(txt_filename,"already exists")
+            continue
 
         image = Image.open(image_path).convert('RGB')
 
