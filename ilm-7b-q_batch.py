@@ -42,6 +42,10 @@ while True:
         filename, _ = os.path.splitext(image_path)
         txt_filename = f"{filename}.ilm7q"
 
+        if os.path.exists(txt_filename):
+            print(txt_filename,"already exists")
+            continue
+
 
         image = image_path
 
