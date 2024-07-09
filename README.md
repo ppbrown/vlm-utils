@@ -34,6 +34,11 @@ This can be used for multiple related purposes:
 
   See the script comments for alternative prompts that may help
 
+# llava-batch.py
+
+This can be configured to use either the 7b, 13b, or 32b LLAVA model
+Read the comments at the top of the file for details
+
 ## Install
 
     python -m venv venv
