@@ -26,6 +26,9 @@ Note particularly the 4bit and 8bit settings
 (or technically you COULD actually override the model settings
   via the command-line options!)
 
+The models memory requirements range from 6GB (7b 4bit)
+to 21GB (32b 4bit). There are many choices inbetween.
+
 """
 
 
