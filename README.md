@@ -7,6 +7,8 @@ One or more utils for various VLMs (Visual Language Models)
 
 Similar to others, but takes less than 12 GB of vram, and is also the fastest to run
 
+Includes a commented-out prompt to focus on detecting text in the image, which is good to find watermarks, etc.
+
 # ilm-2b_batch.py
 
 Use it like cog_vlm.py below. 
