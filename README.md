@@ -9,18 +9,20 @@ Similar to others, but takes less than 12 GB of vram, and is also the fastest to
 
 Includes a commented-out prompt to focus on detecting text in the image, which is good to find watermarks, etc.
 
-# ilm-2b_batch.py
-
-Use it like cog_vlm.py below. 
-Note that it generates ".ilm" files instad of ".txt" files
-Also, it requires 16GB rather than 12 GB of vram
-
 # ilm-7b_batch.py
 
 Use it like cog_vlm.py below. 
 Note that it generates ".ilm7" files instad of ".txt" files
 Also, it requires 24GB rather than 12 GB of vram
 
+
+# ilm-2b_batch.py
+
+Use it like cog_vlm.py below. 
+Note that it generates ".ilm" files instad of ".txt" files
+Also, it requires 16GB rather than 12 GB of vram
+Not sure why anyone would want to use this version instead of the 7gb quantized, but if you would like to try it out,
+here is how you can do so.
 
 # cog_vlm.py 
 
@@ -39,7 +41,8 @@ This can be used for multiple related purposes:
 # llava-batch.py
 
 This can be configured to use either the 7b, 13b, or 32b LLAVA model
-Read the comments at the top of the file for details
+Read the comments at the top of the file for details. This is slow, but potentially generates the
+most detailed and accurate output, with the 32b model.
 
 ## Install
 
