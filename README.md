@@ -8,6 +8,7 @@ One or more utils for various VLMs (Visual Language Models)
 Similar to others, but takes less than 12 GB of vram, and is also the fastest to run
 
 Includes a commented-out prompt to focus on detecting text in the image, which is good to find watermarks, etc.
+In "find the text" mode, a 4090 processes around 1 image a second.
 
 # ilm-7b_batch.py
 
