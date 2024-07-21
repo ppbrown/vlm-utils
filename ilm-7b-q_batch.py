@@ -29,6 +29,7 @@ tokenizer = AutoTokenizer.from_pretrained(
 
 #query = '<ImageHere>Please describe this image in detail.'
 #query = '<ImageHere>Describe any text or writing in the image.'
+#query = '<ImageHere>Describe any signature, watermark, or copyright in the image.'
 query = '<ImageHere>Please objectively describe the subjects in detail, including any blurring.'
 
 while True:
