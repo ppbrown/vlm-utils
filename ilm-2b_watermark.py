@@ -13,7 +13,7 @@ model = AutoModel.from_pretrained('internlm/internlm-xcomposer2-vl-1_8b',
 tokenizer = AutoTokenizer.from_pretrained('internlm/internlm-xcomposer2-vl-1_8b',
         trust_remote_code=True)
 
-query = "<ImageHere> Does this image contain a watermark?"
+query = "<ImageHere> Does this image contain a watermark,copyright,or signature?"
 while True:
         try:
             image_path = input()
