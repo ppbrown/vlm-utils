@@ -23,11 +23,8 @@ while True:
         if image_path == '':
             exit()
 
-        filename, _ = os.path.splitext(image_path)
-        image = image_path
-
         with torch.no_grad():
             with torch.cuda.amp.autocast():
-                response, _ = model.chat(tokenizer, query=query, image=image, history=[], do_sample=False)
+                response, _ = model.chat(tokenizer, query=query, image=image_path, history=[], do_sample=False)
         if response.strip().lower().startswith("yes"):
             print(image_path)
