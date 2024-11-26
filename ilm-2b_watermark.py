@@ -29,5 +29,5 @@ while True:
         with torch.no_grad():
             with torch.cuda.amp.autocast():
                 response, _ = model.chat(tokenizer, query=query, image=image, history=[], do_sample=False)
-        if response.strip().lower() == "yes":
+        if response.strip().lower().startswith("yes"):
             print(image_path)
