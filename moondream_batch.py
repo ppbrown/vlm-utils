@@ -7,6 +7,8 @@
 # It will then write out a caption to "image1.txt"
 #
 # On a 4090 it can process 2-3 small images a second
+#
+# See "moondream_requirements.txt" for required pip modules
 
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
