@@ -23,6 +23,12 @@ So if you are doing a LARGE caption job, you may save some time by bulk conversi
 
 It has a (adjustable) parallel factor to it, so you should be able to downsize 10 - 50 images per second on a super fast box, compared to caption tools that may take 1 second per 512px image, or 3 seconds on a 2048px image
 
+## Downsizing exceptions
+
+You may want to do a cleanup run for any captioning including text.
+Search for files that include quotation marks (")  and then rerun the captioning on just those images,
+at full size
+
 
 # Older ones
 
