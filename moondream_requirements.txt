@@ -1,0 +1,11 @@
+wheel
+torch
+transformers
+pillow
+torchvision
+einops
+# You need to actually manually run this as 
+#   pip install flash-attn --no-build-isolation
+# Then come back and comment out this line
+#flash-attn --no-build-isolation
+accelerate
