@@ -18,6 +18,16 @@ import sys, os
 
 PROMPT = "Describe this image."
 
+# This turns out to be a really good catch for watermarks, if you
+# also use it in conjunction with
+#   fgrep -l -f moondream-badtext
+#
+#PROMPT = "List any text in the image."
+
+# This has sort of a 60% success rate.
+# Still potentially useful
+#PROMPT = "Give only a list of comma seperated words that match the image."
+
 model_id = "vikhyatk/moondream2"
 revision = "2024-08-26"  # Pin to specific version
 
