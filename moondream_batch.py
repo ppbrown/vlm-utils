@@ -19,7 +19,7 @@ import sys, os
 PROMPT = "Describe this image."
 # This prompt also catches a certain fraction of watermarks by default,
 # if you use the following to notice bad files:
-#   fgrep -l -f moondream-badtext
+#   fgrep -l -f moondream-baddefault
 
 #PROMPT = "List any text in the image."
 # This alternative propmt turns out to be a really good catch for watermarks,
