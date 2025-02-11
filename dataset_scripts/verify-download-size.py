@@ -1,5 +1,13 @@
 #!/bin/env python
 
+# Check whether actual size of download image,
+# matches expected size in .json
+# Give this a directory, and it will go through all the
+# image files in that directory, comparing values.
+# Will print out image files that dont match expected values
+# Will also print out filename if it is not an actual image,
+# or does not have matching json file
+
 import os
 import json
 from PIL import Image
@@ -26,7 +34,8 @@ def check_image_dimensions(directory="."):
                 if (actual_width, actual_height) != (expected_width, expected_height):
                     print(image_path)
             except Exception as e:
-                print(f"Error processing {image_path}: {e}")
+                #print(f"Error processing {image_path}: {e}")
+                print(image_path)
 
 if __name__ == "__main__":
     directory = sys.argv[1] if len(sys.argv) > 1 else "."
