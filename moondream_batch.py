@@ -17,15 +17,18 @@ from PIL import Image
 import sys, os
 
 PROMPT = "Describe this image."
+# This prompt also catches a certain fraction of watermarks by default,
+# if you use the following to notice bad files:
+#   fgrep -l -f moondream-badtext
 
-# This turns out to be a really good catch for watermarks, if you
-# also use it in conjunction with
+#PROMPT = "List any text in the image."
+# This alternative propmt turns out to be a really good catch for watermarks,
+# if you also use it in conjunction with
 #   fgrep -l -f moondream-badtext
 #
-#PROMPT = "List any text in the image."
 
 # This has sort of a 60% success rate.
-# Still potentially useful
+# Still potentially useful. But need a better way.
 #PROMPT = "Give only a list of comma seperated words that match the image."
 
 model_id = "vikhyatk/moondream2"
