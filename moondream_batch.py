@@ -16,6 +16,13 @@ from PIL import Image
 
 import sys, os
 
+#PROMPT = ""
+# This actually works, and gives good details.
+# However, this makes it lengthier output than the one
+# below. Do not use if you are limited to 75 tokens
+#
+
+
 PROMPT = "Describe this image."
 # This prompt also catches a certain fraction of watermarks by default,
 # if you use the following to notice bad files:
