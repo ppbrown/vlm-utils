@@ -1,0 +1,7 @@
+wheel
+torch
+onnxruntime-gpu
+pandas
+numpy
+pillow
+huggingface_hub
