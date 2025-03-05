@@ -9,6 +9,8 @@ Finds matching object from original jsonl file
 Extracts the field matching the caption field from object
 Creates .txt filename based on the .json file, and writes the
 caption field data to it.
+
+(you get the .json files when you use a tool like 'img2dataset')
 """
 
 
