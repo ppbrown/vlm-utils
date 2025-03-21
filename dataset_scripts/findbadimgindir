@@ -1,0 +1,66 @@
+#!/bin/env python
+
+"""
+This script can find downloaded images that are truncated.
+Usage:  
+    findbadimgindir dirname1 [dir2 ... ]
+
+
+You can run this in parallel with a bash script:
+
+for d in "$@" ; do
+        test -d "$d" && echo $d
+done | parallel -j8 findbadimgindir {}
+
+"""
+
+
+import os
+import sys
+import warnings
+from PIL import Image
+
+def process_images(directory):
+    """
+    Process all image files in the given directory.
+    If an image fails to load or emits a warning (like 'Truncated File Read'),
+    report the filename along with the error/warning message.
+    EXIF-related warnings are ignored.
+    """
+    issues = []
+
+    # Iterate over all files in the directory
+    for filename in os.listdir(directory):
+        file_path = os.path.join(directory, filename)
+        if os.path.isfile(file_path):
+            # Catch warnings for each file
+            with warnings.catch_warnings(record=True) as caught_warnings:
+                warnings.simplefilter("always")  # Ensure all warnings are caught
+                try:
+                    with Image.open(file_path) as img:
+                        img.load()  # Force full image load
+                except Exception as e:
+                    # Record any exceptions raised during image load
+                    issues.append((filename, f"Exception: {str(e)}"))
+
+                # Check captured warnings for non-EXIF issues
+                for warn in caught_warnings:
+                    message = str(warn.message)
+                    if "EXIF" not in message and "Truncated File Read" in message:
+                        issues.append((filename, f"Warning: {message}"))
+                        # Break after the first relevant warning to avoid duplicates
+                        break
+
+    if issues:
+        print("The following images had issues:")
+        for fname, issue in issues:
+            print(f"  {fname}: {issue}")
+#    else:
+#        print("All images loaded successfully.")
+
+if __name__ == "__main__":
+    if len(sys.argv) != 2:
+        print("Usage: python script.py <directory>")
+    else:
+        process_images(sys.argv[1])
+
