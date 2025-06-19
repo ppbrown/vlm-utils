@@ -3,9 +3,11 @@
 # Give this a directory name, and it will recursively process
 # all image files under that directory
 # Example custom prompts:
-#   "Describe this image."
-#   "Is the image watermarked?."
+#   "Describe .... in the image."
+#   "Is the image watermarked?." (mixed success)
 #   "Are there humans in the image?"
+#   "Is this a photograph?" (as opposed to a painting, etc)
+#       It also sometimes identifies "this is a black and white photograph"
 
 import argparse
 import torch
@@ -42,12 +44,15 @@ def process_image(image_path, call_type, prompt=None):
     except Exception as e:
         print(f"Failed to open {image_path}: {e}")
         return
-
-    if call_type:
-        response = caption(image, call_type)
-    else:
-        enc_image = model.encode_image(image)
-        response = model.answer_question(enc_image, prompt, tokenizer)
+    try:
+        if call_type:
+            response = caption(image, call_type)
+        else:
+            enc_image = model.encode_image(image)
+            response = model.answer_question(enc_image, prompt, tokenizer)
+    except Exception as e:
+        print(f"Error processing {image_path}: Image corrupt somewhere", file=sys.stderr)
+        exit(1)
     
     print(response)
     with open(txt_filename, "w") as f:
