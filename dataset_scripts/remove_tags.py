@@ -1,19 +1,23 @@
 #!/bin/env python
 
 """
+Purpose:
+    remove a specific set of tags(specified in a textfile, one per line)
+    from ALL .txt files under a directory
+
 Usage:
     remove_tags.py --root-dir  /some/path  --remove_list list-file
-It will then go through all .txt files under root-dir and edit appropriately
+
 """
 
 import os
 import argparse
 
 def clean_tags(line, remove_set):
-    # Split, strip, and deduplicate tags via set
-    tags = set(t.strip() for t in line.split(",") if t.strip())
-    newtags = tags - remove_set
-    return ", ".join(sorted(newtags))
+    # Split, strip, tags, then remove undesirables
+    tags = [t.strip() for t in line.split(",") if t.strip()]
+    filtered = [t for t in tags if t not in remove_set]
+    return ", ".join(filtered)
 
 def process_file(filepath, remove_set):
     with open(filepath, "r", encoding="utf-8") as f:
