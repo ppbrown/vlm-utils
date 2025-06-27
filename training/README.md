@@ -60,8 +60,21 @@ As noted above, I can just barely fit in a batch size of 64, on my 4090, using 5
 (in this case represented as --resolution 512)
 
 
+# Square image limitation
 
+By default, these tools will only work with 512x512 resolution.
 
+Resolution is controlled by the size of the generated image cache files.
 
+In theory, if you use the --resolution tweaking 
+(and remove the CenterCrop call) in create_img_cache.py,
+you could also train on other sizes. But BEWARE!
 
+There is a theoretical upper limit on total amount of knowledge you can train.
+
+SD1.5 is a relatively tiny model, and training at different sizes effectively loses knowledge.
+If you want a model knowledable about many things, you must stick to one aspect ratio. 
+
+Contrariwise, the more varients of size you train on for a particular subject, the more
+you will displace knowledge about other things you are not training on.
 
