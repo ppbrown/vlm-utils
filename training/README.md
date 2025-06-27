@@ -79,3 +79,15 @@ If you want a model knowledable about many things, you must stick to one aspect 
 Contrariwise, the more varients of size you train on for a particular subject, the more
 you will displace knowledge about other things you are not training on.
 
+# Tensorboard logging
+
+These scripts output logging to tensorboard.
+
+With other programs, you may be used to seeing the typical "learning rate" and "loss"
+graphs. This, however, adds in "qk_grads_av" and "raw loss".
+
+This is because when you are training from scratch, it is really important to make sure
+that the "q/k gradients" arent doing crazy things like going to 0.
+It is also sometimes nice, when SNR is enabled, to compare the default loss stats, vs the
+"raw (non snr)" loss
+
