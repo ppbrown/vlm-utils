@@ -10,7 +10,8 @@ I am using the CLI tools in an attempt to train a model from scratch, that is:
 * SD 1.5 vae
 
 I'm training this in bf16 precision and 512x512 images, because with this setup,
-I can run a native batch size of 64
+I can run a native batch size of 64 on my rtx 4090, and get
+1600 steps per hour
 
 ## Assumptions
 
