@@ -1,0 +1,62 @@
+#!/usr/bin/env python3
+
+import argparse
+from pathlib import Path
+
+import torch
+from torchvision.transforms.functional import to_pil_image
+import safetensors.torch as st
+from diffusers import DiffusionPipeline
+from PIL import Image
+
+
+@torch.no_grad()
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--model", required=True, help="Diffusers model directory or repo (must have VAE)")
+    parser.add_argument("--cache_file", required=True, help="Path to the latent .safetensors file")
+    parser.add_argument("--out_image", help="Optional: save output image to this path")
+    parser.add_argument("--scaling_factor", type=float, default=None, help="Override scaling factor (default: model's config)")
+    parser.add_argument("--custom", action="store_true",help="Treat model as custom pipeline")
+    args = parser.parse_args()
+
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+
+    # Load pipeline and VAE
+    pipe = DiffusionPipeline.from_pretrained(
+        args.model,
+        torch_dtype=torch.float32,
+        safety_checker=None,
+        requires_safety_checker=False,
+        custom_pipeline=args.model if args.custom else None,
+    )
+    vae = pipe.vae.to(device).eval()
+
+    # Get scaling factor
+    scaling = args.scaling_factor if args.scaling_factor is not None else vae.config.scaling_factor
+
+    # Load latent
+    latent = st.load_file(args.cache_file)["latent"]
+    latent = latent.unsqueeze(0).to(device)  # add batch dim
+    recon = vae.decode(latent).sample
+    #latent = torch.as_tensor(latent).unsqueeze(0).to(device)  # add batch dim
+
+    # Scale latent
+    # latent = latent * scaling
+
+    # Decode latent -> image
+    # Have to undo "Normalization" that the VAE requires,
+    # before we can convert back to iamge pixels
+    recon = (recon / 2 + 0.5).clamp(0, 1)
+    recon = recon.squeeze(0).cpu()
+
+    pil_img = to_pil_image(recon)
+
+    if args.out_image:
+        pil_img.save(args.out_image)
+        print(f"Saved image to {args.out_image}")
+    else:
+        pil_img.show()
+
+if __name__ == "__main__":
+    main()
