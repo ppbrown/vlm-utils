@@ -42,7 +42,7 @@ or "opendiffusionai/sdx_t5"
 
 Sample usage;
 
-    ./create_img_cache.py --model opendiffusionai/stablediffusion_t5 --data_root /data
+    ./create_img_cache.py --model opendiffusionai/stablediffusion_t5 --data_root /data --custom
 
 
 ## Training
@@ -59,6 +59,13 @@ edit the front end to tweak the various flags used, such as
 
 As noted above, I can just barely fit in a batch size of 64, on my 4090, using 512x512 resolution.
 (in this case represented as --resolution 512)
+
+## Benefits
+
+Benefits of this method over larger programs:
+
+* You can easily identify the cache files. 
+* You can also easily choose to regenerate JUST img cache or text cache files
 
 
 # Square image limitation
@@ -78,6 +85,8 @@ If you want a model knowledable about many things, you must stick to one aspect 
 
 Contrariwise, the more varients of size you train on for a particular subject, the more
 you will displace knowledge about other things you are not training on.
+
+# ------------------------------------------------------------------------
 
 # Tensorboard logging
 
