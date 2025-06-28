@@ -76,6 +76,14 @@ Benefits of this method over larger programs:
 * You can easily identify the cache files. 
 * You can also easily choose to regenerate JUST img cache or text cache files
 
+## Comparing runs
+
+When you have two seperate output directories with different settings...
+as long as you sampled at the same step interval, you can use the 
+"../dataset_scripts/compare_imgdirs.py"
+tool to show the same step from each directory side-by-side
+
+You probably will not need the compare_tensorfiles.py tool
 
 # Square image limitation
 
