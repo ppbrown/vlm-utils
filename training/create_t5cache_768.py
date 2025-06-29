@@ -85,7 +85,7 @@ def main():
     txt_files = sorted(root.rglob("*.txt"))
 
 
-    print("Parsing",root)
+    print(f"Parsing {root} while skippping existing cache files...")
     def needs_cache(p: Path) -> bool:
         return args.overwrite or not (p.with_suffix(p.suffix + CACHE_POSTFIX)).exists()
 
