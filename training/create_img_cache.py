@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
 
+"""
+    Create latent cache files from img files.
+    This is half of what train_lion_cached.py needs
+"""
+
 import argparse
 from pathlib import Path
 from tqdm.auto import tqdm
@@ -61,7 +66,10 @@ def main():
 
     tfm = get_transform(args.resolution)
 
-    print(f"Processing {len(image_paths)} images...")
+
+    print(f"Processing {len(image_paths)} images from {args.data_root}")
+    print(f"Using {args.model} to {args.out_suffix}...")
+    print("")
 
     for i in tqdm(range(0, len(image_paths), args.batch_size)):
         batch_paths = image_paths[i:i+args.batch_size]
