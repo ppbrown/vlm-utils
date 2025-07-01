@@ -14,7 +14,19 @@ After you have done that you will be able to run
 
 and it will create .txt files to match all your img files.
 
-WARNING: If it cannot detect any recognizable objects, it will not
+## WARNING 1: 
+
+If it cannot detect any recognizable objects, it will not
 create a .txt file at all
+
+## WARNING 2:
+
+If it sees more than one person... it wont tell you. It will just tag
+"person"
+
+## WARNING 3:
+
+It currently DOES NOT DIFFERENTIATE "man" vs "woman". It just says "person" ?!!
+
 
 
