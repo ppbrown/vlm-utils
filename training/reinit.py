@@ -78,7 +78,7 @@ def reinit_qk(unet, *, method: str = "xavier", sigma: float = 0.1) -> None:
     print(f"[reinit_qk] updated {affected/1e6:.2f} M params in query/key projections")
 
 
-def reinit_attention_all(unet, *, method: str = "xavier", sigma: float = 0.1) -> None:
+def reinit_cross_attention(unet, *, method: str = "xavier", sigma: float = 0.1) -> None:
     """
     Reinitialize q, k, v, and output projections for all cross-attention modules in the UNet.
     """
@@ -114,3 +114,65 @@ def reinit_attention_all(unet, *, method: str = "xavier", sigma: float = 0.1) ->
                     affected += proj.weight.numel()
 
     print(f"[reinit_attention_all] updated {affected/1e6:.2f} M params in q/k/v/out projections")
+
+
+# I think "cross attention" is specifically for text emb mapping.
+# Whereas self attention is for interpreting latent noisy images
+def reinit_all_attention(
+    unet,
+    method: str = "xavier",
+    sigma: float = 0.1,
+    cross: bool = True,
+    self_attn: bool = True,
+):
+    """
+    Reinitialize q, k, v, and output projections for all attention modules in the UNet.
+    By default, both cross-attention and self-attention modules are reinitialized.
+    Set `cross` or `self_attn` to False to skip that type.
+    """
+    hard = method.lower() == "xavier"
+    affected = 0
+
+    for mod in unet.modules():
+        # Only target modules that have is_cross_attention attribute (typical in SD1.5 code)
+        if hasattr(mod, "is_cross_attention"):
+            # Decide if this attention should be reset
+            if (mod.is_cross_attention and cross) or (not mod.is_cross_attention and self_attn):
+                # q, k, v
+                for proj_name in ("to_q", "to_k", "to_v"):
+                    proj = getattr(mod, proj_name, None)
+                    if proj is None:
+                        continue
+                    if hard:
+                        torch.nn.init.xavier_uniform_(proj.weight)
+                        if proj.bias is not None:
+                            torch.nn.init.zeros_(proj.bias)
+                    else:
+                        proj.weight.data += torch.randn_like(proj.weight) * sigma
+                        if proj.bias is not None:
+                            proj.bias.data += torch.randn_like(proj.bias) * sigma
+                    affected += proj.weight.numel()
+                # Output projection
+                proj = getattr(mod, "to_out", None)
+                if proj is not None:
+                    if isinstance(proj, torch.nn.Sequential) and isinstance(proj[0], torch.nn.Linear):
+                        if hard:
+                            torch.nn.init.xavier_uniform_(proj[0].weight)
+                            if proj[0].bias is not None:
+                                torch.nn.init.zeros_(proj[0].bias)
+                        else:
+                            proj[0].weight.data += torch.randn_like(proj[0].weight) * sigma
+                            if proj[0].bias is not None:
+                                proj[0].bias.data += torch.randn_like(proj[0].bias) * sigma
+                        affected += proj[0].weight.numel()
+                    elif isinstance(proj, torch.nn.Linear):
+                        if hard:
+                            torch.nn.init.xavier_uniform_(proj.weight)
+                            if proj.bias is not None:
+                                torch.nn.init.zeros_(proj.bias)
+                        else:
+                            proj.weight.data += torch.randn_like(proj.weight) * sigma
+                            if proj.bias is not None:
+                                proj.bias.data += torch.randn_like(proj.bias) * sigma
+                        affected += proj.weight.numel()
+    print(f"Reinitialized {affected} attention parameters ({'cross' if cross else ''}{' & ' if cross and self_attn else ''}{'self' if self_attn else ''}-attention).")
