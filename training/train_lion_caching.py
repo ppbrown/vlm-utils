@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# train_lion_nodecay_snr_cached.py
 
 import argparse, os, math
 from pathlib import Path
@@ -30,27 +29,42 @@ def parse_args():
     p = argparse.ArgumentParser()
     p.add_argument("--pretrained_model", required=True,  help="HF repo or local dir")
     p.add_argument("--train_data_dir",  nargs="+", required=True,  help="directory tree(s) containing *.jpg + *.txt")
-    p.add_argument("--output_dir",       required=True)
-    p.add_argument("--batch_size",  type=int, default=4)
-    p.add_argument("--gradient_accum",  type=int, default=1, help="default=1")
-    p.add_argument("--learning_rate", type=float, default=1e-5, help="default=1e-5")
+    p.add_argument("--optimizer",      type=str, choices=["adamw8","lion"], default="adamw8")
+    p.add_argument("--output_dir",     required=True)
+    p.add_argument("--batch_size",     type=int, default=4)
+    p.add_argument("--gradient_accum", type=int, default=1, help="default=1")
+    p.add_argument('--gradient_checkpointing', action='store_true',
+                   help="enable grad checkpointing in unet")
+    p.add_argument("--learning_rate",   type=float, default=1e-5, help="default=1e-5")
+    p.add_argument("--weight_decay",   type=float)
+    p.add_argument("--vae_scaling_factor", type=float, help="override vae scaling factor")
+    p.add_argument("--text_scaling_factor", type=float, help="Override embedding scaling factor")
     p.add_argument("--learning_rate_decay", type=float,
                    help="Subtract this every epoch, if schedler==constant")
-    p.add_argument("--max_steps",   type=int, default=10_000, help="default=10_000")
-    p.add_argument("--save_steps",  type=int, default=1_000, help="default=1_000")
-    p.add_argument("--warmup_steps",  type=int, default=0, help="default=0")
-    p.add_argument("--seed",        type=int, default=42)
-    p.add_argument("--noise_gamma", type=float, default=5.0)
+    p.add_argument("--max_steps",       type=int, default=10_000, help="default=10_000")
+    ex_group = p.add_mutually_exclusive_group()
+    ex_group.add_argument("--save_steps",    type=int, default=1_000, help="default=1_000")
+    ex_group.add_argument("--save_on_epoch", action="store_true")
+    p.add_argument("--warmup_steps",    type=int, default=0, help="default=0")
+    p.add_argument("--noise_gamma",     type=float, default=5.0)
     p.add_argument("--cpu_offload", action="store_true",
                    help="enable cpu offload at pipe level")
     p.add_argument("--use_snr", action="store_true",
                    help="Use Min SNR noise adjustments")
+    p.add_argument("--reinit_crossattn", action="store_true",
+                   help="Attempt to reset cross attention weights for text realign")
+    p.add_argument("--reinit_attn", action="store_true",
+                   help="Attempt to reset ALL attention weights for text realign")
+    p.add_argument("--reinit_qk", action="store_true",
+                   help="Attempt to reset just qk weights for text realign")
     p.add_argument("--reinit_unet", action="store_true",
-                   help="Train from scratch (Do not use, this is broken)")
-    p.add_argument('--gradient_checkpointing', action='store_true',
-                   help="enable grad checkpointing in unet")
+                   help="Train from scratch unet (Do not use, this is broken)")
     p.add_argument("--sample_prompt",  type=str, help="prompt to use for a checkpoint sample image")
     p.add_argument("--scheduler", type=str, default="constant", help="default=constant")
+    p.add_argument("--seed",        type=int, default=42)
+    p.add_argument("--txtcache_suffix", type=str, default=".txt_clipl", help="default=.txt_clipl")
+    p.add_argument("--imgcache_suffix", type=str, default=".img_sdvae", help="default=.img_sdvae")
+
     return p.parse_args()
 
 # --------------------------------------------------------------------------- #
@@ -58,18 +72,20 @@ def parse_args():
 # --------------------------------------------------------------------------- #
 
 class CaptionImgDataset(Dataset):
-    """Iterate .jpg files, but yield only cache files for both img and text."""
-    def __init__(self, root_dirs):
+    """Iterate .jpg and .png files, but yield only cache files for both img and text."""
+    def __init__(self, root_dirs, imgcache_suffix=".img_cache", txtcache_suffix=".txt_t5cache"):
         self.files = []
         for root in root_dirs:
-            print("Scanning", root)
-            for p in Path(root).rglob("*.jpg"):
-                img_cache = p.with_suffix(".img_cache")
-                txt_cache = p.with_suffix(".txt_t5cache")
-                # Only keep samples where BOTH caches exist
-                if img_cache.exists() and txt_cache.exists():
-                    self.files.append((img_cache, txt_cache))
+            for ext in ("jpg", "png"):
+                print(f"Scanning {root} for {imgcache_suffix} and {txtcache_suffix} matching {ext}")
+                for p in Path(root).rglob(f"*.{ext}"):
+                    img_cache = p.with_suffix(imgcache_suffix)
+                    txt_cache = p.with_suffix(txtcache_suffix)
+                    # Only keep samples where BOTH caches exist
+                    if img_cache.exists() and txt_cache.exists():
+                        self.files.append((img_cache, txt_cache))
         print(f"Total cache pairs found: {len(self.files)}")
+
         if not self.files:
             raise RuntimeError("No valid cache pairs found! Did you run your cache pre-processing script?")
 
@@ -89,9 +105,10 @@ def collate_fn(examples):
         "txt_cache": [e["txt_cache"] for e in examples],
     }
 
-def sample_img(prompt, seed, CHECKPOINT_DIR, PIPELINE_CODE_DIR):
-    fname=f"{CHECKPOINT_DIR}/sample.png"
-    print(f"Trying render of '{prompt}' using seed {seed} to {fname}")
+# PIPELINE_CODE_DIR is typicaly the dir of original model
+def sample_img(prompt, seed, CHECKPOINT_DIR, PIPELINE_CODE_DIR, fname="sample.png"):
+    outname=f"{CHECKPOINT_DIR}/{fname}"
+    print(f"Trying render of '{prompt}' using seed {seed} to {outname}")
     pipe = DiffusionPipeline.from_pretrained(
         CHECKPOINT_DIR, custom_pipeline=PIPELINE_CODE_DIR, use_safetensors=True,
         safety_checker=None, requires_safety_checker=False,
@@ -103,7 +120,7 @@ def sample_img(prompt, seed, CHECKPOINT_DIR, PIPELINE_CODE_DIR):
     generator = torch.Generator(device="cuda").manual_seed(seed)
 
     images = pipe(prompt, num_inference_steps=30, generator=generator).images
-    images[0].save(fname)
+    images[0].save(outname)
 
 #####################################################
 # Main                                              #
@@ -143,6 +160,18 @@ def main():
         print("UNet cross_attention_dim:", new_unet.config.cross_attention_dim)
         new_unet.to(torch_dtype)
         pipe.unet=new_unet
+    elif args.reinit_qk:
+        print("Attempting to reset Q/K layers of Unet")
+        from reinit import reinit_qk
+        reinit_qk(pipe.unet)
+    elif args.reinit_crossattn:
+        print("Attempting to reset Cross Attn layers of Unet")
+        from reinit import reinit_cross_attention
+        reinit_cross_attention(pipe.unet)
+    elif args.reinit_attn:
+        print("Attempting to reset Attn layers of Unet")
+        from reinit import reinit_all_attention
+        reinit_all_attention(pipe.unet)
     else:
         print("Finetuning prior Unet")
 
@@ -163,6 +192,7 @@ def main():
             # beta_schedule="cosine", # "cosine not implemented for DDPMScheduler"
             clip_sample=False
             )
+    print("T5 (projection layer) scaling factor is", pipe.t5_projection.config.scaling_factor)
 
     # Freeze VAE (and T5) so only UNet is optimised; comment-out to train all.
     for p in vae.parameters():                p.requires_grad_(False)
@@ -170,7 +200,10 @@ def main():
     for p in pipe.t5_projection.parameters(): p.requires_grad_(False)
 
     # ----- data ------------------------------------------------------------ #
-    ds = CaptionImgDataset(args.train_data_dir)
+    ds = CaptionImgDataset(args.train_data_dir, 
+                           txtcache_suffix=args.txtcache_suffix,
+                           imgcache_suffix=args.imgcache_suffix
+                           )
     dl = DataLoader(ds, batch_size=args.batch_size, shuffle=True,
                     num_workers=8, persistent_workers=True,
                     pin_memory=True, collate_fn=collate_fn,
@@ -178,8 +211,25 @@ def main():
 
     # Gather just-trainable parameters
     trainable_params = [p for p in unet.parameters() if p.requires_grad]
-    optim = lion_pytorch.Lion(trainable_params, lr=peak_lr, weight_decay=0.00, betas=(0.95,0.98))
-    print(f"NOTE: peak_lr = {peak_lr}, lr_scheduler={args.scheduler}, steps={total_steps}")
+    if args.optimizer == "lion":
+        import lion_pytorch
+        # lion doesnt use decay?
+        weight_decay=0.00
+        optim = lion_pytorch.Lion(trainable_params, lr=peak_lr, weight_decay=0.00, betas=(0.95,0.98))
+        #optim = lion_pytorch.Lion(trainable_params, lr=peak_lr, weight_decay=0.00, betas=(0.93,0.95))
+    elif args.optimizer == "adamw8":
+        import bitsandbytes as bnb
+        if args.weight_decay:
+            weight_decay=args.weight_decay
+        else:
+            weight_decay=0.01
+        optim = bnb.optim.AdamW8bit(trainable_params, weight_decay=weight_decay, lr=peak_lr, betas=(0.95,0.98))
+    else:
+        print("ERROR: unrecognized optimizer setting")
+        exit(1)
+
+    print("Using optimizer",args.optimizer,"weight decay:",weight_decay)
+    print(f"NOTE: peak_lr = {peak_lr}, lr_scheduler={args.scheduler}, batch={args.batch_size}, steps={total_steps}")
     for p in unet.parameters(): p.requires_grad_(True)
     unet, dl, optim = accelerator.prepare(pipe.unet, dl, optim)
     unet.train()
@@ -203,8 +253,27 @@ def main():
     run_name = os.path.basename(args.output_dir)
     tb_writer = SummaryWriter(log_dir=os.path.join("tensorboard/",run_name))
 
+    def checkpointandsave():
+        ckpt_dir = os.path.join(args.output_dir, f"checkpoint-{global_step:05}")
+        pinned_te, pinned_unet = pipe.text_encoder, pipe.unet
+        pipe.unet = accelerator.unwrap_model(unet)
+        pipe.save_pretrained(ckpt_dir, safe_serialization=True)
+        pipe.text_encoder, pipe.unet = pinned_te, pinned_unet
+        if args.sample_prompt is not None:
+            sample_img(args.sample_prompt, 99, ckpt_dir, 
+                       args.pretrained_model, 
+                       fname=f"../sample-s{global_step:05d}.png")
+            if global_step == 0:
+                # For step 0, treat chpt_dir as a neccessary temp save, just for
+                # sample generation
+                import shutil
+                shutil.rmtree(ckpt_dir)
+
     # ----- training loop --------------------------------------------------- #
     for epoch in range(math.ceil(args.max_steps / len(dl))):
+        if args.save_on_epoch:
+            checkpointandsave()
+
         for batch in dl:
             with accelerator.accumulate(unet):
                 # --- Load latents & prompt embeddings from cache ---
@@ -242,7 +311,8 @@ def main():
                 if args.use_snr:
                     snr = compute_snr(noise_sched, timesteps)
                     gamma = args.noise_gamma
-                    weights = snr / (snr + gamma)
+                    gamma_tensor = torch.full_like(snr, gamma)
+                    weights = torch.minimum(snr, gamma_tensor) / (snr + 1e-8)
                     loss = (weights * mse).mean()
                 else:
                     loss = raw_mse_loss
@@ -267,33 +337,28 @@ def main():
                     if p.grad is not None and torch.isnan(p.grad).any():
                         print(f"NaN grad: {n}")
 
-                pbar.set_postfix({"loss": f"{loss.item():.3f}",
+                current_lr = lr_sched.get_last_lr()[0]
+                pbar.set_postfix({"l": f"{loss.item():.3f}",
                                   "raw": f"{raw_mse_loss.item():.3f}",
                                   "qk": f"{qk_grad_sum:.2e}",
-                                  "gnorm": f"{total_norm:.2e}"
+                                  "g": f"{total_norm:.2e}",
+                                  "E": f"{epoch}",
+                                  #"lr": f"{current_lr:.1e}",
                                   })
 
                 if tb_writer is not None:
                     tb_writer.add_scalar("train/loss", loss.item(), global_step)
                     tb_writer.add_scalar("train/loss_raw", raw_mse_loss.item(), global_step)
-                    current_lr = lr_sched.get_last_lr()[0]
                     tb_writer.add_scalar("train/learning_rate", current_lr, global_step)
                     tb_writer.add_scalar("train/qk_grads_av", qk_grad_sum, global_step)
 
             if (
                     accelerator.is_main_process
                     and args.save_steps
-                    and global_step
+                    #and global_step
                     and global_step % args.save_steps == 0
             ):
-                ckpt_dir = os.path.join(args.output_dir, f"checkpoint-{global_step:05}")
-                pinned_te, pinned_unet = pipe.text_encoder, pipe.unet
-                pipe.text_encoder = None
-                pipe.unet = accelerator.unwrap_model(unet)
-                pipe.save_pretrained(ckpt_dir, safe_serialization=True)
-                pipe.text_encoder, pipe.unet = pinned_te, pinned_unet
-                if args.sample_prompt is not None:
-                    sample_img(args.sample_prompt, 99, ckpt_dir, args.pretrained_model)
+                checkpointandsave()
 
             torch.nn.utils.clip_grad_norm_(trainable_params, 1.0)
             optim.step(); lr_sched.step(); optim.zero_grad()
