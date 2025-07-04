@@ -43,7 +43,7 @@ def parse_args():
                    help="Subtract this every epoch, if schedler==constant")
     p.add_argument("--max_steps",       type=int, default=10_000, help="default=10_000")
     ex_group = p.add_mutually_exclusive_group()
-    ex_group.add_argument("--save_steps",    type=int, default=1_000, help="default=1_000")
+    ex_group.add_argument("--save_steps",    type=int)
     ex_group.add_argument("--save_on_epoch", action="store_true")
     p.add_argument("--warmup_steps",    type=int, default=0, help="default=0")
     p.add_argument("--noise_gamma",     type=float, default=5.0)
