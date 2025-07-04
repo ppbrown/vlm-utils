@@ -30,7 +30,7 @@ def cli():
     p.add_argument("--data_root", required=True,
                    help="directory tree that contains *.txt caption files")
     p.add_argument("--model",
-                   default="/BLUE/t5-train/models/t5-sdx",
+                   default="/BLUE/t5-train/models/t5-sd",
                    help="HF repo / local dir of your pipeline")
     #               default="opendiffusionai/stablediffusion_t5",
 
@@ -61,9 +61,8 @@ def encode_gpu(captions, pipe, precision):
 # --------------------------------------------------------------------------- #
 def main():
     args = cli()
-    torch.backends.cuda.matmul.allow_tf32 = True          # fastest safe path
+    torch.backends.cuda.matmul.allow_tf32 = True
 
-    # ---------- load your pipeline ---------------------------------------- #
     print("Loading",args.model)
     pipe = DiffusionPipeline.from_pretrained(
         args.model,
@@ -71,13 +70,14 @@ def main():
         torch_dtype=torch.float16 if args.dtype == "fp16" else torch.bfloat16,
     )
 
+    print("T5 (projection layer) scaling factor is", pipe.t5_projection.config.scaling_factor)
+
     # Free modules unused during caption encoding to save VRAM
     for attr in ("vae", "unet", "image_encoder", "scheduler"):
         if hasattr(pipe, attr):
             setattr(pipe, attr, None)
- 
-    pipe.to("cuda")
 
+    pipe.to("cuda")
     gc.collect(); torch.cuda.empty_cache()
 
     # ---------- gather caption files -------------------------------------- #
@@ -92,7 +92,6 @@ def main():
     txt_files = [p for p in txt_files if needs_cache(p)]
     print(f"🟢 Encoding {len(txt_files):,} captions on GPU")
 
-    # ---------- process in batches ---------------------------------------- #
     bs = args.batch_size
     for start in tqdm(range(0, len(txt_files), bs), unit="batch"):
         batch_files = txt_files[start : start + bs]
