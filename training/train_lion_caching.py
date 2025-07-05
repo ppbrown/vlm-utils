@@ -62,7 +62,7 @@ def parse_args():
     p.add_argument("--sample_prompt",  type=str, help="prompt to use for a checkpoint sample image")
     p.add_argument("--scheduler", type=str, default="constant", help="default=constant")
     p.add_argument("--seed",        type=int, default=42)
-    p.add_argument("--txtcache_suffix", type=str, default=".txt_clipl", help="default=.txt_clipl")
+    p.add_argument("--txtcache_suffix", type=str, default=".txt_t5cache", help="default=.txt_t5cache")
     p.add_argument("--imgcache_suffix", type=str, default=".img_sdvae", help="default=.img_sdvae")
 
     return p.parse_args()
@@ -76,6 +76,7 @@ class CaptionImgDataset(Dataset):
     def __init__(self, root_dirs, imgcache_suffix=".img_cache", txtcache_suffix=".txt_t5cache"):
         self.files = []
         for root in root_dirs:
+            subtotal=0
             for ext in ("jpg", "png"):
                 print(f"Scanning {root} for {imgcache_suffix} and {txtcache_suffix} matching {ext}")
                 for p in Path(root).rglob(f"*.{ext}"):
@@ -84,6 +85,8 @@ class CaptionImgDataset(Dataset):
                     # Only keep samples where BOTH caches exist
                     if img_cache.exists() and txt_cache.exists():
                         self.files.append((img_cache, txt_cache))
+                        subtotal+=1
+            print(f"Cache pairs found: {subtotal}")
         print(f"Total cache pairs found: {len(self.files)}")
 
         if not self.files:
