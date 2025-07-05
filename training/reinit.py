@@ -28,20 +28,6 @@ def _add_noise(m: nn.Linear, sigma: float) -> None:
             m.bias.add_(torch.randn_like(m.bias) * sigma * std)
 
 
-
-# randomize ALL unet weights not just qk
-def reinit_weights(m):
-    if isinstance(m, (nn.Conv2d, nn.Linear)):
-        init.xavier_uniform_(m.weight)
-        if m.bias is not None:
-            nn.init.zeros_(m.bias)
-    elif isinstance(m, nn.LayerNorm):
-        nn.init.ones_(m.weight)
-        nn.init.zeros_(m.bias)
-    elif isinstance(m, nn.Embedding):
-        init.normal_(m.weight, mean=0.0, std=0.02)
-
-
 def reinit_qk(unet, *, method: str = "xavier", sigma: float = 0.1) -> None:
     """
     Reset (or perturb) the to_q / to_k projections in every CrossAttention
@@ -176,3 +162,37 @@ def reinit_all_attention(
                                 proj.bias.data += torch.randn_like(proj.bias) * sigma
                         affected += proj.weight.numel()
     print(f"Reinitialized {affected} attention parameters ({'cross' if cross else ''}{' & ' if cross and self_attn else ''}{'self' if self_attn else ''}-attention).")
+
+
+# This resets the "first and last", aka in and out, convolution layers,
+# AND ALSO CALLS THE ATTENTION LAYER RESET
+def reinit_outer_unet(unet):
+
+    reinit_all_attention(unet)
+    # Reinit first and last conv layers
+    #nninit = torch.nn.init.xavier_uniform_ if method == "xavier" else torch.nn.init.kaiming_uniform_
+    nninit = torch.nn.init.kaiming_uniform_
+    for name, module in unet.named_modules():
+        if isinstance(module, torch.nn.Conv2d) and ("conv_in" in name or "conv_out" in name):
+            nninit(module.weight)
+            if module.bias is not None:
+                torch.nn.init.zeros_(module.bias)
+            print(f"Reinitialized {name}")
+
+# randomize ALL unet weights not just qk
+def reinit_all_unet(unet):
+    for m in unet.modules():
+        if isinstance(m, (nn.Conv2d, nn.Linear)):
+            init.xavier_uniform_(m.weight)
+            if m.bias is not None:
+                nn.init.zeros_(m.bias)
+        elif isinstance(m, nn.LayerNorm):
+            nn.init.ones_(m.weight)
+            nn.init.zeros_(m.bias)
+        elif isinstance(m, nn.Embedding):
+            init.normal_(m.weight, mean=0.0, std=0.02)
+        elif isinstance(m, (nn.GroupNorm, nn.InstanceNorm2d)):
+            nn.init.ones_(m.weight)
+            nn.init.zeros_(m.bias)
+    print("[reinit_all_unet] All weights reinitialized.")
+
