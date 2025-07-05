@@ -1,5 +1,9 @@
 #!/usr/bin/env python
 
+# Okay this is called "train_lion_" but you can actually override optimizer.
+# Currently it only supports
+#  --optimizer  adamw8
+
 import argparse, os, math
 from pathlib import Path
 from tqdm.auto import tqdm
@@ -30,6 +34,7 @@ def parse_args():
     p.add_argument("--pretrained_model", required=True,  help="HF repo or local dir")
     p.add_argument("--train_data_dir",  nargs="+", required=True,  help="directory tree(s) containing *.jpg + *.txt")
     p.add_argument("--optimizer",      type=str, choices=["adamw8","lion"], default="adamw8")
+    p.add_argument("--copy_config",    type=str, help="config file to archive with training, if model load succeeds")
     p.add_argument("--output_dir",     required=True)
     p.add_argument("--batch_size",     type=int, default=4)
     p.add_argument("--gradient_accum", type=int, default=1, help="default=1")
@@ -153,16 +158,19 @@ def main():
 
     if args.reinit_unet:
         print("Training Unet from scratch")
+        """ This does not work!!
         BASEUNET="models/sd-base/unet"
-        print("Loading config from ",BASEUNET)
-
         # Note: the config from pipe.unet seems to get corrupted.
-        # Load a fresh one instead
+        # SO, Load a fresh one instead
         conf=UNet2DConditionModel.load_config(BASEUNET)
         new_unet=UNet2DConditionModel.from_config(conf)
         print("UNet cross_attention_dim:", new_unet.config.cross_attention_dim)
         new_unet.to(torch_dtype)
         pipe.unet=new_unet
+        """
+        print("Attempting to reset ALL layers of Unet")
+        from reinit import reinit_all_unet
+        reinit_all_unet(pipe.unet)
     elif args.reinit_qk:
         print("Attempting to reset Q/K layers of Unet")
         from reinit import reinit_qk
@@ -252,7 +260,7 @@ def main():
     latent_scaling = vae.config.scaling_factor
 
     global_step    = 0
-    pbar = tqdm(total=args.max_steps, desc="T", unit="step")
+    pbar = tqdm(total=args.max_steps, desc="T", unit="step", dynamic_ncols=True)
     run_name = os.path.basename(args.output_dir)
     tb_writer = SummaryWriter(log_dir=os.path.join("tensorboard/",run_name))
 
@@ -271,6 +279,9 @@ def main():
                 # sample generation
                 import shutil
                 shutil.rmtree(ckpt_dir)
+                if args.copy_config:
+                    print("archiving", args.copy_config, "\n") # yes this needs extra LF
+                    shutil.copy(args.copy_config, args.output_dir)
 
     # ----- training loop --------------------------------------------------- #
     for epoch in range(math.ceil(args.max_steps / len(dl))):
