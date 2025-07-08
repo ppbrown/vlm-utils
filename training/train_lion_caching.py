@@ -80,10 +80,11 @@ class CaptionImgDataset(Dataset):
     """Iterate .jpg and .png files, but yield only cache files for both img and text."""
     def __init__(self, root_dirs, imgcache_suffix=".img_cache", txtcache_suffix=".txt_t5cache"):
         self.files = []
+        extset = ("jpg", "png")
         for root in root_dirs:
+            print(f"Scanning {root} for {imgcache_suffix} and {txtcache_suffix} matching {extset}")
             subtotal=0
-            for ext in ("jpg", "png"):
-                print(f"Scanning {root} for {imgcache_suffix} and {txtcache_suffix} matching {ext}")
+            for ext in extset:
                 for p in Path(root).rglob(f"*.{ext}"):
                     img_cache = p.with_suffix(imgcache_suffix)
                     txt_cache = p.with_suffix(txtcache_suffix)
@@ -113,10 +114,14 @@ def collate_fn(examples):
         "txt_cache": [e["txt_cache"] for e in examples],
     }
 
+from diffusers.utils import logging as hf_logging
+
+
 # PIPELINE_CODE_DIR is typicaly the dir of original model
 def sample_img(prompt, seed, CHECKPOINT_DIR, PIPELINE_CODE_DIR, fname="sample.png"):
     outname=f"{CHECKPOINT_DIR}/{fname}"
-    print(f"Trying render of '{prompt}' using seed {seed} to {outname}")
+    tqdm.write(f"Trying render of '{prompt}' using seed {seed} to {outname}...")
+    hf_logging.disable_progress_bar()
     pipe = DiffusionPipeline.from_pretrained(
         CHECKPOINT_DIR, custom_pipeline=PIPELINE_CODE_DIR, use_safetensors=True,
         safety_checker=None, requires_safety_checker=False,
@@ -129,6 +134,9 @@ def sample_img(prompt, seed, CHECKPOINT_DIR, PIPELINE_CODE_DIR, fname="sample.pn
 
     images = pipe(prompt, num_inference_steps=30, generator=generator).images
     images[0].save(outname)
+    tqdm.write("Sample saved.")
+
+    hf_logging.enable_progress_bar()
 
 #####################################################
 # Main                                              #
@@ -260,7 +268,6 @@ def main():
     latent_scaling = vae.config.scaling_factor
 
     global_step    = 0
-    pbar = tqdm(total=args.max_steps, desc="T", unit="step", dynamic_ncols=True)
     run_name = os.path.basename(args.output_dir)
     tb_writer = SummaryWriter(log_dir=os.path.join("tensorboard/",run_name))
 
@@ -284,11 +291,21 @@ def main():
                     shutil.copy(args.copy_config, args.output_dir)
 
     # ----- training loop --------------------------------------------------- #
-    for epoch in range(math.ceil(args.max_steps / len(dl))):
+    ebar = tqdm(range(math.ceil(args.max_steps / len(dl))), 
+                desc="Epoch", unit="", dynamic_ncols=True,
+                position=0)
+    for epoch in ebar:
         if args.save_on_epoch:
             checkpointandsave()
 
-        for batch in dl:
+        pbar = tqdm(dl, 
+                    desc="LocalStep", 
+                    bar_format="{l_bar}{bar}|{n_fmt}/{total_fmt}{rate_fmt}{postfix}", 
+                    dynamic_ncols=True,
+                    position=1,
+                    leave=False)
+
+        for batch in pbar:
             with accelerator.accumulate(unet):
                 # --- Load latents & prompt embeddings from cache ---
                 latents = []
@@ -336,7 +353,6 @@ def main():
 
             # -----logging & ckp save  ----------------------------------------- #
             if accelerator.is_main_process:
-                pbar.update(1)
                 qk_grad_sum = sum(
                         p.grad.abs().mean().item()
                         for n,p in unet.named_parameters()
@@ -373,6 +389,7 @@ def main():
                     and global_step % args.save_steps == 0
             ):
                 checkpointandsave()
+                # this will mess up the pbar if done here instead of end of epoch
 
             torch.nn.utils.clip_grad_norm_(trainable_params, 1.0)
             optim.step(); lr_sched.step(); optim.zero_grad()
@@ -381,6 +398,7 @@ def main():
             if global_step >= args.max_steps:
                 break
 
+        pbar.close()
         if global_step >= args.max_steps:
             break
 
