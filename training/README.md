@@ -32,7 +32,7 @@ Initially, it should be a directory, or directory tree, with a bunch of image fi
 
 ## Cache generation
 
-* image caching script (create_img_cache.py)
+* image caching script (create_img_sdvae.py or sdxl)
 * text caption caching script (create_t5cache_768.py)
 
 
