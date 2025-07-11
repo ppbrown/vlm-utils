@@ -16,8 +16,11 @@ from accelerate import Accelerator, DistributedDataParallelKwargs
 from diffusers import DiffusionPipeline, UNet2DConditionModel
 from diffusers import DDPMScheduler
 from diffusers.models.attention import Attention as CrossAttention
-from diffusers.optimization import get_scheduler
 from diffusers.training_utils import compute_snr
+
+# diffusers optimizers dont have a min_lr arg
+#from diffusers.optimization import get_scheduler
+from transformers import get_scheduler
 
 from torch.utils.tensorboard import SummaryWriter
 
@@ -212,6 +215,9 @@ def main():
             clip_sample=False
             )
     print("T5 (projection layer) scaling factor is", pipe.t5_projection.config.scaling_factor)
+    latent_scaling = vae.config.scaling_factor
+    print("VAE scaling factor is",latent_scaling)
+
 
     # Freeze VAE (and T5) so only UNet is optimised; comment-out to train all.
     for p in vae.parameters():                p.requires_grad_(False)
@@ -253,19 +259,23 @@ def main():
     unet, dl, optim = accelerator.prepare(pipe.unet, dl, optim)
     unet.train()
 
-    lr_sched = get_scheduler(
-        args.scheduler,
-        optimizer=optim,
-        num_warmup_steps=warmup_steps,
-        num_training_steps=total_steps,
-    )
+    scheduler_args = {
+        "optimizer": optim,
+        "num_warmup_steps": warmup_steps,
+        "num_training_steps": total_steps,
+    }
+
+    if args.scheduler == "cosine_with_min_lr":
+        scheduler_args["scheduler_specific_kwargs"] = {"min_lr_rate": 0.1}
+        print("Setting default min_lr to 0.1")
+
+    lr_sched = get_scheduler(args.scheduler, **scheduler_args)
     lr_sched = accelerator.prepare(lr_sched)
+
     print(
         f"Align-phase: {sum(p.numel() for p in trainable_params)/1e6:.2f} M "
         "parameters will be updated"
     )
-
-    latent_scaling = vae.config.scaling_factor
 
     global_step    = 0
     run_name = os.path.basename(args.output_dir)
@@ -287,7 +297,7 @@ def main():
                 import shutil
                 shutil.rmtree(ckpt_dir)
                 if args.copy_config:
-                    print("archiving", args.copy_config, "\n") # yes this needs extra LF
+                    tqdm.write(f"Archiving {args.copy_config}")
                     shutil.copy(args.copy_config, args.output_dir)
 
     # ----- training loop --------------------------------------------------- #
@@ -303,7 +313,7 @@ def main():
                     bar_format="{l_bar}{bar}|{n_fmt}/{total_fmt}{rate_fmt}{postfix}", 
                     dynamic_ncols=True,
                     position=1,
-                    leave=False)
+                    leave=True)
 
         for batch in pbar:
             with accelerator.accumulate(unet):
@@ -370,8 +380,8 @@ def main():
                 current_lr = lr_sched.get_last_lr()[0]
                 pbar.set_postfix({"l": f"{loss.item():.3f}",
                                   "raw": f"{raw_mse_loss.item():.3f}",
-                                  "qk": f"{qk_grad_sum:.2e}",
-                                  "g": f"{total_norm:.2e}",
+                                  "qk": f"{qk_grad_sum:.1e}",
+                                  "g": f"{total_norm:.1e}",
                                   "E": f"{epoch}",
                                   #"lr": f"{current_lr:.1e}",
                                   })
