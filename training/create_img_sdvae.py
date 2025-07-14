@@ -65,15 +65,26 @@ def main():
     vae.eval()
 
     # Collect images
-    image_paths = find_images(args.data_root, args.extensions)
+    all_image_paths = find_images(args.data_root, args.extensions)
+    image_paths = []
+    skipped = 0
+    for path in all_image_paths:
+        out_path = path.with_name(path.stem + args.out_suffix)
+        if out_path.exists():
+            skipped += 1
+            continue
+        image_paths.append(path)
     if not image_paths:
-        print("No images found.")
+        print("No new images to process (all cache files exist).")
         return
+    if skipped:
+        print(f"Skipped {skipped} files with existing cache.")
 
     tfm = get_transform(args.resolution)
 
 
     print(f"Processing {len(image_paths)} images from {args.data_root}")
+    print("Batch size is",args.batch_size)
     print(f"Using {args.model} to {args.out_suffix}...")
     print("")
 
