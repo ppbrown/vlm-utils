@@ -16,11 +16,12 @@ I can run a native batch size of 64 on my rtx 4090, and get
 ## Assumptions
 
 Certain parts of these scripts are hard-coded around my model.
-They should be easily adaptable to normal SD1.5 training.
-Less easy for SDXL.
-More difficult for any other model.
+I have now tweaked them so they are also capable of doing normal SD1.5 training.
 
-They do use the "diffusers" Pipeline methodology though.
+In theory the core loop could be modified for SDXL.
+More work would be required to fit it for for any other model.
+
+Loosely speaking it the "diffusers" Pipeline methodology, at least in some places.
 
 The training script is a work in progress. Not guaranteed to work correctly at this point!
 
