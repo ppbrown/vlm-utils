@@ -30,10 +30,12 @@ To use the training stuff, you need to prepare a dataset.
 Initially, it should be a directory, or directory tree, with a bunch of image files
 (usually .jpg) and a set of matching .txt files which contain a caption for its jpg twin.
 
+You will then need to generate cache files for them
+
 ## Cache generation
 
 * image caching script (create_img_sdvae.py or sdxl)
-* text caption caching script (create_t5cache_768.py)
+* text caption caching script (create_t5cache_768.py, or create_clipl.py)
 
 
 Note that both of these expepct to make use of the custom "diffusers pipeline" present in
