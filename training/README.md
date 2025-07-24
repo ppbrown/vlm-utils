@@ -17,6 +17,7 @@ I can run a native batch size of 64 on my rtx 4090, and get
 
 Certain parts of these scripts are hard-coded around my model.
 I have now tweaked them so they are also capable of doing normal SD1.5 training.
+See the "train_sd.sh" script
 
 In theory the core loop could be modified for SDXL.
 More work would be required to fit it for for any other model.
