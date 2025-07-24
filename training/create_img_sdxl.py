@@ -3,6 +3,9 @@
 """
     Create latent cache files from img files.
     This is half of what train_lion_cached.py needs
+
+    For large runs, maximum throughput is obtained by running at least 2
+    seperate processes of this, after splitting up dataset accordingly
 """
 
 import argparse
@@ -15,11 +18,31 @@ import safetensors.torch as st
 from diffusers import DiffusionPipeline
 from PIL import Image
 
+
+import os
+import sys
+import subprocess
+
+# This stuff required for the "deterministic" settings
+ENV_VAR = "CUBLAS_WORKSPACE_CONFIG"
+DESIRED = ":4096:8"  # Or ":16:8" if preferred
+
+if os.environ.get(ENV_VAR) != DESIRED:
+    os.environ[ENV_VAR] = DESIRED
+    print(f"[INFO] Setting {ENV_VAR}={DESIRED} and re-executing.")
+    args = [sys.executable] + sys.argv
+    # Use os.execvpe to replace the current process (no zombie parent)
+    os.execvpe(args[0], args, os.environ)
+    sys.exit(1) # If exec fails, exit explicitly
+
+torch.use_deterministic_algorithms(True)
+torch.backends.cudnn.deterministic = True
+
 def parse_args():
     p = argparse.ArgumentParser()
     p.add_argument("--model", default="stabilityai/stable-diffusion-xl-base-1.0",
                    help="HF repo or local dir (default=stabilityai/stable-diffusion-xl-base-1.0)")
-    p.add_argument("--data_root", required=True, 
+    p.add_argument("--data_root", required=True,
                    help="Directory containing images (recursively searched)")
     p.add_argument("--out_suffix", default=".img_sdxl", 
                    help="File suffix for saved latents(default: .img_sdxl)")
@@ -41,7 +64,8 @@ def get_transform(size):
         TVT.Resize(size, interpolation=Image.BICUBIC),
         TVT.CenterCrop(size),
         TVT.ToTensor(),
-        TVT.Normalize([0.5], [0.5]),  # have to do this before appplying VAE!!
+        # Have to do this before appplying VAE!!
+        TVT.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5])
     ])
 
 @torch.no_grad()
@@ -103,7 +127,7 @@ def main():
             continue
 
         batch_tensor = torch.stack(batch_imgs).to(device)
-        latents = vae.encode(batch_tensor).latent_dist.sample().cpu()  # raw latent, no scaling
+        latents = vae.encode(batch_tensor).latent_dist.mean.cpu()  # raw latent, no scaling
 
         # Save each latent as its own safetensors file
         for j, path in enumerate(valid_paths):
