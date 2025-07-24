@@ -23,7 +23,7 @@ See the "train_sd.sh" script
 In theory the core loop could be modified for SDXL.
 More work would be required to fit it for for any other model.
 
-Loosely speaking it the "diffusers" Pipeline methodology, at least in some places.
+Loosely speaking it uses the "diffusers" Pipeline methodology, at least in some places.
 
 The training script is a work in progress. Not guaranteed to work correctly at this point!
 
@@ -37,17 +37,17 @@ You will then need to generate cache files for them
 
 ## Cache generation
 
-* image caching script (create_img_sdvae.py or sdxl)
+* image caching script (create_img_sdvae.py or create_img_sdxl.py)
 * text caption caching script (create_t5cache_768.py, or create_clipl.py)
 
 
-Note that both of these expepct to make use of the custom "diffusers pipeline" present in
+Note that some scripts expect to make use of the custom "diffusers pipeline" present in
 huggingface model "opendiffusionai/stablediffusion_t5"
 or "opendiffusionai/sdx_t5"
 
 Sample usage;
 
-    ./create_img_cache.py --model opendiffusionai/stablediffusion_t5 --data_root /data --custom
+    ./create_img_sdxl.py --model opendiffusionai/stablediffusion_t5 --data_root /data --custom
 
     # Note that this only pulls the vae from the pipeline. So if you are really sure you know
     # which vae to use, you may use one of the standard pipelines, and skip the --custom
@@ -61,11 +61,11 @@ Sample usage;
 
 ## Training
 
-You should only need to call the front end, "t5lion_caching.sh".
+You should only need to invoke the front end, "t5lion_caching.sh".
 
-It takes care of invoking train_lion_caching.py
+It takes care of calling train_lion_caching.py
 
-edit the front end to tweak the various flags used, such as
+Edit the front end as needed to tweak the various flags used, such as
 
     --learning_rate 
     --batch_size
@@ -80,6 +80,7 @@ Benefits of this method over larger programs:
 
 * You can easily identify the cache files. 
 * You can also easily choose to regenerate JUST img cache or text cache files
+* Similarly, it is easy to selectively remove cache files associated with main ones.
 
 ## Comparing runs
 
@@ -92,12 +93,12 @@ You probably will not need the compare_tensorfiles.py tool
 
 # Square image limitation
 
-By default, these tools will only work with 512x512 resolution.
+By default, these tools will expect to work with 512x512 resolution.
 
 Resolution is controlled by the size of the generated image cache files.
 That is why the back-end does not have any -resolution flag
 
-In theory, if you use the --resolution tweaking in create_img_cache.py,
+In theory, if you use the --resolution tweaking in create_img_sdvae.py,
 (and remove the CenterCrop call) 
 you could also train on other sizes. But BEWARE!
 You need to understand more about model training to do that correctly.
@@ -118,10 +119,12 @@ This is why I am focusing on square training exclusively for my current projects
 
 # Tensorboard logging
 
-These scripts output logging to tensorboard.
+These scripts output logging to tensorboard, in a "tensorboard" subdirectory.
+To view, start tensorboard as a seperate program in that directory, etc.
 
-With other programs, you may be used to seeing the typical "learning rate" and "loss"
-graphs. This, however, adds in "qk_grads_av" and "raw loss".
+When using tensorboard with other training programs, you may be used to 
+seeing the typical "learning rate" and "loss" graphs.
+This program additionally adds in "qk_grads_av" and "raw loss".
 
 This is because when you are training from scratch, it is really important to make sure
 that the "q/k gradients" arent doing crazy things like going to 0.
