@@ -93,10 +93,14 @@ You probably will not need the compare_tensorfiles.py tool
 By default, these tools will only work with 512x512 resolution.
 
 Resolution is controlled by the size of the generated image cache files.
+That is why the back-end does not have any -resolution flag
 
-In theory, if you use the --resolution tweaking 
-(and remove the CenterCrop call) in create_img_cache.py,
+In theory, if you use the --resolution tweaking in create_img_cache.py,
+(and remove the CenterCrop call) 
 you could also train on other sizes. But BEWARE!
+You need to understand more about model training to do that correctly.
+
+## Model capacity limits
 
 There is a theoretical upper limit on total amount of knowledge you can train.
 
@@ -105,6 +109,8 @@ If you want a model knowledable about many things, you must stick to one aspect 
 
 Contrariwise, the more varients of size you train on for a particular subject, the more
 you will displace knowledge about other things you are not training on.
+
+This is why I am focusing on square training exclusively for my current projects
 
 # ------------------------------------------------------------------------
 
