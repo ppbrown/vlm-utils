@@ -5,4 +5,4 @@ along with associated utilities and cache creation tools.
 
 The contents have been moved to
 
-[https://github.com/ppbrown/ai-training/tree/main/training](https://github.com/ppbrown/ai-training/tree/main/training)
+[https://github.com/ppbrown/ai-training/tree/main/trainer](https://github.com/ppbrown/ai-training/tree/main/trainer)
