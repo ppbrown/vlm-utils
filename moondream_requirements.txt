@@ -9,3 +9,5 @@ einops
 # Then come back and comment out this line
 #flash-attn --no-build-isolation
 accelerate
+pyvips
+# This requires libpyvips to also be installed on Linux
