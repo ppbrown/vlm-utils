@@ -1,4 +1,9 @@
 #!/bin/bash
+#
+## This is actually the most accurate method i've found so far to
+# identify photo or non-photo.
+# Including Qwen2.
+# It's also FAST.
 
 if [[ ! -d "$1" ]] ; then
 	echo ERROR: must give a directory name
