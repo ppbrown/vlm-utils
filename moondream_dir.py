@@ -33,9 +33,9 @@ def caption(image, calltype):
     return answer.get("caption", "")
 
 
-def process_image(image_path, call_type, prompt=None):
+def process_image(image_path, call_type, prompt=None, suffix="moon"):
     filename, _ = os.path.splitext(image_path)
-    txt_filename = f"{filename}.txt"
+    txt_filename = f"{filename}.{suffix}"
     if os.path.exists(txt_filename):
         print(f"{txt_filename} already exists")
         return
@@ -63,10 +63,11 @@ def main():
         description="Recursively process all image files in a directory."
     )
     parser.add_argument("directory", help="Directory to process")
+    parser.add_argument("-s", type=str, metavar="suffix", default="moon", help="default='moon'")
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument("-c", action="store_true", help="Use short call")
     group.add_argument("-C", action="store_true", help="Use long call")
-    group.add_argument("-p", type=str,  metavar="Prompt", help="Custom prompt to use with answer_question")
+    group.add_argument("-p", type=str,  metavar="prompt", help="Custom prompt to use with answer_question")
 
     
     args = parser.parse_args()
@@ -82,10 +83,14 @@ def main():
         PROMPT = args.p
 
     # Walk through all subdirectories and files.
+    IMAGE_EXTENSIONS = {'.jpg', '.jpeg', '.png', '.bmp', '.gif', '.tiff', '.webp'}
     for root, dirs, files in os.walk(args.directory):
         for file in files:
+            ext = os.path.splitext(file)[1].lower()
+            if ext not in IMAGE_EXTENSIONS:
+                continue
             image_path = os.path.join(root, file)
-            process_image(image_path, call_type, PROMPT)
+            process_image(image_path, call_type, PROMPT, args.s)
 
 if __name__ == '__main__':
     main()
