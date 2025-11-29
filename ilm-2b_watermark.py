@@ -13,6 +13,9 @@ model = AutoModel.from_pretrained('internlm/internlm-xcomposer2-vl-1_8b',
 tokenizer = AutoTokenizer.from_pretrained('internlm/internlm-xcomposer2-vl-1_8b',
         trust_remote_code=True)
 
+model.to("cuda")
+tokenizer.to("cuda")
+
 query = "<ImageHere> Does this image contain a watermark,copyright,or signature?"
 while True:
         try:
