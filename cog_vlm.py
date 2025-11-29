@@ -7,6 +7,7 @@
 
 # Code borrowed from
 # https://github.com/THUDM/CogVLM/basic_demo/
+# now https://github.com/zai-org/CogVLM/basic_demo/
 
 import argparse
 import torch
