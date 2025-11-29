@@ -22,7 +22,7 @@ import pandas as pd
 from PIL import Image
 import onnxruntime as rt # Make sure to install "onnxruntime-gpu" for acceleration!
 import huggingface_hub
-from tqdm import tqdm
+from tqdm.auto import tqdm
 
 MODEL_REPO = "SmilingWolf/wd-eva02-large-tagger-v3"
 # MODEL_REPO = "SmilingWolf/wd-vit-large-tagger-v3"
@@ -35,7 +35,7 @@ MAX_TAGS = 60
 BATCH_SIZE = 8
 BLACKLIST = [
     "uncensored", "teeth","monster girl",
-    "k-pop","asian","cosplay","photorealistic","photo background","realistic","solo",
+    "k-pop","asian","cosplay","photorealistic","photo background","realistic",
     "multicolored hair","real world location","horror (theme)"
 ]
 
@@ -157,12 +157,16 @@ def process_directory(directory, save_metadata):
     if not os.path.exists(directory):
         return
     all_imgs = []
+    print("Scanning", directory)
     for root, dirs, files in os.walk(directory):
         for f in files:
             if f.lower().endswith(('.jpg','.jpeg','.png','.bmp','.gif','.tiff','.webp')):
                 all_imgs.append(os.path.join(root,f))
     if not all_imgs:
+        print("no images found")
         return
+    else:
+        print(len(all_imgs),"found")
     no_txt = []
     for img in all_imgs:
         if not os.path.exists(get_txt_path(img)):
