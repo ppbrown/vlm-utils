@@ -1,0 +1,12 @@
+# This file is tweaked a bit, so that
+# a P100 can load qwen2 with VL model.
+# Oddly, the older non-VL model does not require tweaks
+torch==2.6.0
+numpy==2.2.6
+qwen-vl-utils
+transformers
+Pillow
+Requests
+torchvision
+accelerate
+bitsandbytes
